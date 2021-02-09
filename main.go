@@ -19,32 +19,39 @@ package main
 import (
 	"github.com/kalkayan/gumshoe/config"
 	"github.com/kalkayan/gumshoe/core"
+	"github.com/kalkayan/gumshoe/models"
 	"github.com/kalkayan/gumshoe/routes"
 )
 
 func main() {
-	// config provides a convient way to parameterize application with environ-
-	// ment variables. A ".env" is expected in the root directory to create any
-	// custom environment variables.
+	// config provides a convient way to parameterize the application with env
+	// -ironment variables. The ".env" present at root  is expected to have all
+	// the custom environment variables.
 	config.Configure()
 
-	// registers a database for the application, database connection string is
-	// picked from the configurations loaded in the application. DB is a pkg
-	// level variable and is available for all the models.
-	core.DB.Register()
+	// registers a database instance for the application, database connection
+	// string is picked from the configurations loaded in the application.
+	// RegisterDB binds a new gorm instance to a package level variable "DB".
+	core.RegisterDB()
 
-	// registers a router for the application, router is created in this scope
-	// and routes are registered by passing router's reference. Router is an
-	// encapsulation over gin framework.
+	// automigrate the database if the application is in debug mode. This should
+	// be skipped in the production mode as it alters the database tables and
+	// schema of the model, which can create unexpected crash of the application.
+	if config.Debug {
+		core.DB.AutoMigrate(&models.User{})
+	}
+
+	// registers a router for the application. Router is an encapsulation over
+	// gin framework. Routes are added by passing router's reference.
 	router := core.Router{}
 	router.Register()
 
-	// routes are registered to the application router. for further addition of
-	// routes in the router, register them in Register method under "routes.go"
-	// and not here.
+	// routes are registered to the application router. the further addition of
+	// routes  should be done in Register method under "routes.go" and not here.
 	routes.Register(&router)
 
-	// fire up the already booted application, and process request with their
-	// specific response.
+	// fire up the already configured application. Process requests with their
+	// appropriate response and return back to the client. The application by
+	// default runs on port :8080.
 	router.Router.Run()
 }
